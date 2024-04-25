@@ -1,0 +1,50 @@
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from nltk.probability import FreqDist
+from nltk.classify import NaiveBayesClassifier
+from nltk.classify.util import accuracy
+
+nltk.download('stopwords')
+nltk.download('punkt')
+
+spam_messages = [
+    "Congratulations! You've won a free trip to Hawaii. Claim now!",
+    "Lose 10 pounds in 1 week with this secret pill!",
+    "Click here to claim your prize!",
+]
+
+ham_messages = [
+    "Hey, what are you up to later?",
+    "Reminder: Meeting tomorrow at 10am.",
+    "Don't forget to buy milk on your way home.",
+]
+
+# Function to preprocess text
+def preprocess_text(text):
+    stop_words = set(stopwords.words('english'))
+    ps = PorterStemmer()
+    tokens = word_tokenize(text.lower())
+    filtered_tokens = [ps.stem(w) for w in tokens if w.isalnum() and w not in stop_words]
+    return dict(FreqDist(filtered_tokens))
+
+# Preprocess messages
+spam_features = [(preprocess_text(msg), 'spam') for msg in spam_messages]
+ham_features = [(preprocess_text(msg), 'ham') for msg in ham_messages]
+
+# Split data into training and test sets
+split = int(0.8 * len(spam_features))
+train_set = spam_features[:split] + ham_features[:split]
+test_set = spam_features[split:] + ham_features[split:]
+
+# Train the classifier
+classifier = NaiveBayesClassifier.train(train_set)
+
+# Evaluate the classifier
+print("Accuracy:", accuracy(classifier, test_set))
+
+# Example usage
+message = "This link will change your life"
+features = preprocess_text(message)
+print("Classification:", classifier.classify(features))
